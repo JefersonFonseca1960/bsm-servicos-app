@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/empresa_model.dart';
@@ -81,8 +83,8 @@ class ApiService {
       body: {"username": username.trim(), "password": password.trim()},
     );
 
-    print("🔐 LOGIN STATUS: ${response.statusCode}");
-    print("🔐 LOGIN BODY: ${response.body}");
+    debugPrint("🔐 LOGIN STATUS: ${response.statusCode}");
+    debugPrint("🔐 LOGIN BODY: ${response.body}");
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -110,8 +112,8 @@ class ApiService {
       headers: await _headers(),
     );
 
-    print("📡 EMPRESAS STATUS: ${response.statusCode}");
-    print("📡 EMPRESAS BODY: ${response.body}");
+    debugPrint("📡 EMPRESAS STATUS: ${response.statusCode}");
+    debugPrint("📡 EMPRESAS BODY: ${response.body}");
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
@@ -140,7 +142,7 @@ class ApiService {
   }
 
   // =========================
-  // 📡 GET SERVIÇOS
+  // SERVIÇOS
   // =========================
 
   static Future<List<Servico>> getServicos() async {
@@ -149,8 +151,8 @@ class ApiService {
       headers: await _headers(),
     );
 
-    print("📡 SERVIÇOS STATUS: ${response.statusCode}");
-    print("📡 SERVIÇOS BODY: ${response.body}");
+    debugPrint("📡 SERVIÇOS STATUS: ${response.statusCode}");
+    debugPrint("📡 SERVIÇOS BODY: ${response.body}");
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
@@ -172,8 +174,8 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    print("🏢 CREATE EMPRESA STATUS: ${response.statusCode}");
-    print(response.body);
+    debugPrint("🏢 CREATE EMPRESA STATUS: ${response.statusCode}");
+    debugPrint(response.body);
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception("Erro ao criar empresa");
@@ -191,11 +193,58 @@ class ApiService {
       body: jsonEncode(data),
     );
 
-    print("✏️ UPDATE EMPRESA STATUS: ${response.statusCode}");
-    print(response.body);
+    debugPrint("✏️ UPDATE EMPRESA STATUS: ${response.statusCode}");
+    debugPrint(response.body);
 
     if (response.statusCode != 200) {
       throw Exception("Erro ao atualizar empresa");
+    }
+  }
+
+  // =========================
+  // UPLOAD FOTO EMPRESA
+  // =========================
+
+  static Future<bool> uploadFotoEmpresa({
+    required int empresaId,
+    required XFile imagem,
+  }) async {
+    try {
+      final token = await getToken();
+
+      final request = http.MultipartRequest(
+        "POST",
+        Uri.parse("$baseUrl/empresa/$empresaId/fotos"),
+      );
+
+      request.headers["Authorization"] = "Bearer $token";
+
+      // WEB
+      if (kIsWeb) {
+        final bytes = await imagem.readAsBytes();
+
+        request.files.add(
+          http.MultipartFile.fromBytes("file", bytes, filename: imagem.name),
+        );
+      }
+      // MOBILE
+      else {
+        request.files.add(
+          await http.MultipartFile.fromPath("file", imagem.path),
+        );
+      }
+
+      final response = await request.send();
+
+      final body = await response.stream.bytesToString();
+
+      debugPrint("📸 UPLOAD FOTO STATUS: ${response.statusCode}");
+      debugPrint("📸 UPLOAD FOTO BODY: $body");
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint("❌ ERRO UPLOAD FOTO: $e");
+      return false;
     }
   }
 
