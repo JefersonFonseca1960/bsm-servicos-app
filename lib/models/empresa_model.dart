@@ -1,8 +1,8 @@
 import 'empresa_foto_model.dart';
-import 'avaliacao_model.dart';
 
 class Empresa {
   final int id;
+
   final String nome;
 
   final String? descricao;
@@ -21,17 +21,35 @@ class Empresa {
 
   final bool ativo;
 
+  final double? avaliacaoMedia;
+
   final int? servicoId;
 
   final String? fotoPrincipal;
 
-  final double? avaliacaoMedia;
-
   final List<EmpresaFoto> fotos;
 
-  final List<Avaliacao> avaliacoes;
+  final double? distanciaKm;
 
-  const Empresa({
+  // =========================
+  // PREMIUM
+  // =========================
+
+  final bool destaque;
+
+  final String plano;
+
+  final int prioridade;
+
+  final bool whatsappDestacado;
+
+  final bool exibirNoTopo;
+
+  final bool seloPremium;
+
+  final Map<String, dynamic>? permissoes;
+
+  Empresa({
     required this.id,
     required this.nome,
     this.descricao,
@@ -45,43 +63,86 @@ class Empresa {
     this.cep,
     this.latitude,
     this.longitude,
-    this.ativo = true,
+    required this.ativo,
+    this.avaliacaoMedia,
     this.servicoId,
     this.fotoPrincipal,
-    this.avaliacaoMedia,
     this.fotos = const [],
-    this.avaliacoes = const [],
+    this.distanciaKm,
+
+    // PREMIUM
+    this.destaque = false,
+    this.plano = 'gratuito',
+    this.prioridade = 0,
+    this.whatsappDestacado = false,
+    this.exibirNoTopo = false,
+    this.seloPremium = false,
+    this.permissoes,
   });
 
-  factory Empresa.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory Empresa.fromJson(Map<String, dynamic> json) {
     return Empresa(
-      id: json['id'] ?? 0,
-      nome: json['nome'] ?? '',
-      descricao: json['descricao'],
-      telefone: json['telefone'],
-      whatsapp: json['whatsapp'],
-      email: json['email'],
-      endereco: json['endereco'],
-      cidade: json['cidade'],
-      bairro: json['bairro'],
-      estado: json['estado'],
-      cep: json['cep'],
+      id: _toInt(json['id']) ?? 0,
+
+      nome: json['nome']?.toString() ?? '',
+
+      descricao: json['descricao']?.toString(),
+      telefone: json['telefone']?.toString(),
+      whatsapp: json['whatsapp']?.toString(),
+      email: json['email']?.toString(),
+
+      endereco: json['endereco']?.toString(),
+      cidade: json['cidade']?.toString(),
+      bairro: json['bairro']?.toString(),
+      estado: json['estado']?.toString(),
+      cep: json['cep']?.toString(),
+
       latitude: _toDouble(json['latitude']),
       longitude: _toDouble(json['longitude']),
-      ativo: json['ativo'] ?? true,
-      servicoId: json['servico_id'],
-      fotoPrincipal: json['foto_principal'],
-      avaliacaoMedia: _toDouble(json['avaliacao_media']),
-      fotos: _parseFotos(json['fotos']),
-      avaliacoes: (json['avaliacoes'] as List<dynamic>?)
-              ?.map((a) => Avaliacao.fromJson(a))
-              .toList() ??
-          [],
 
-      // avaliacoes: _parseAvaliacoes(json['avaliacoes']),
+      ativo: _toBool(json['ativo']),
+
+      avaliacaoMedia: _toDouble(json['avaliacao_media']),
+
+      servicoId: _toInt(json['servico_id']),
+
+      fotoPrincipal: json['foto_principal']?.toString(),
+
+      fotos: json['fotos'] is List
+          ? (json['fotos'] as List).map((e) => EmpresaFoto.fromJson(e)).toList()
+          : [],
+
+      distanciaKm: _toDouble(json['distancia_km']),
+
+      // =========================
+      // PREMIUM
+      // =========================
+      destaque: _toBool(json['destaque']),
+
+      plano: json['plano']?.toString() ?? 'gratuito',
+
+      prioridade: _toInt(json['prioridade']) ?? 0,
+
+      whatsappDestacado: _toBool(json['whatsapp_destacado']),
+
+      exibirNoTopo: _toBool(json['exibir_no_topo']),
+
+      seloPremium: _toBool(json['selo_premium']),
+
+      permissoes: json["permissoes"] ?? {"galeria": false},
     );
+  }
+
+  // =========================
+  // HELPERS
+  // =========================
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+
+    if (value is int) return value;
+
+    return int.tryParse(value.toString());
   }
 
   static double? _toDouble(dynamic value) {
@@ -89,40 +150,20 @@ class Empresa {
 
     if (value is double) return value;
 
-    if (value is int) {
-      return value.toDouble();
-    }
+    if (value is int) return value.toDouble();
 
-    return double.tryParse(value.toString());
+    return double.tryParse(value.toString().replaceAll(',', '.'));
   }
 
-  static List<EmpresaFoto> _parseFotos(dynamic fotosJson) {
-    if (fotosJson is List) {
-      return fotosJson.map((f) {
-        // backend retorna string
-        if (f is String) {
-          return EmpresaFoto(
-            id: 0,
-            url: f,
-            principal: false,
-          );
-        }
+  static bool _toBool(dynamic value) {
+    if (value == null) return false;
 
-        // backend retorna objeto
-        return EmpresaFoto.fromJson(f);
-      }).toList();
-    }
+    if (value is bool) return value;
 
-    return [];
-  }
+    if (value is int) return value == 1;
 
-  static List<Avaliacao> _parseAvaliacoes(dynamic avaliacoesJson) {
-    if (avaliacoesJson is List) {
-      return avaliacoesJson.map((a) {
-        return Avaliacao.fromJson(a);
-      }).toList();
-    }
+    final str = value.toString().toLowerCase();
 
-    return [];
+    return str == 'true' || str == '1';
   }
 }

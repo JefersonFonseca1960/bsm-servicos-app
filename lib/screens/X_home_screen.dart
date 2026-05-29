@@ -77,60 +77,55 @@ class _HomeScreenState extends State<HomeScreen> {
       _debounce!.cancel();
     }
 
-    _debounce = Timer(
-      const Duration(milliseconds: 500),
-      () async {
-        if (texto.trim().isEmpty) {
-          setState(() {
-            empresas = [];
-            jaBuscou = false;
-          });
-
-          return;
-        }
-
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (texto.trim().isEmpty) {
         setState(() {
-          loading = true;
-          erro = "";
-          jaBuscou = true;
+          empresas = [];
+          jaBuscou = false;
         });
 
-        try {
-          // =========================
-          // 🔥 AJUSTE PRINCIPAL
-          // =========================
-          final lista = await ApiService.getEmpresas();
+        return;
+      }
 
-          final filtro = lista.where((empresa) {
-            final busca = texto.toLowerCase();
+      setState(() {
+        loading = true;
+        erro = "";
+        jaBuscou = true;
+      });
 
-            final nomeEmpresa = empresa.nome.toLowerCase();
+      try {
+        // =========================
+        // 🔥 AJUSTE PRINCIPAL
+        // =========================
+        final lista = await ApiService.getEmpresas();
 
-            return nomeEmpresa.contains(busca);
-          }).toList();
+        final filtro = lista.where((empresa) {
+          final busca = texto.toLowerCase();
 
-          if (!mounted) return;
+          final nomeEmpresa = empresa.nome.toLowerCase();
 
-          setState(() {
-            empresas = filtro;
-            loading = false;
-          });
+          return nomeEmpresa.contains(busca);
+        }).toList();
 
-          debugPrint(
-            "📋 EMPRESAS FILTRADAS: ${empresas.length}",
-          );
-        } catch (e) {
-          if (!mounted) return;
+        if (!mounted) return;
 
-          setState(() {
-            loading = false;
-            erro = "Erro ao buscar empresas";
-          });
+        setState(() {
+          empresas = filtro;
+          loading = false;
+        });
 
-          debugPrint("❌ ERRO BUSCA: $e");
-        }
-      },
-    );
+        debugPrint("📋 EMPRESAS FILTRADAS: ${empresas.length}");
+      } catch (e) {
+        if (!mounted) return;
+
+        setState(() {
+          loading = false;
+          erro = "Erro ao buscar empresas";
+        });
+
+        debugPrint("❌ ERRO BUSCA: $e");
+      }
+    });
   }
 
   // =========================
@@ -154,18 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildEmpresaCard(Empresa empresa) {
     final imageUrl = getImageUrl(empresa);
 
-    debugPrint(
-      "🔥 RENDER CARD => ${empresa.nome} / ADMIN: $tipoUsuario",
-    );
+    debugPrint("🔥 RENDER CARD => ${empresa.nome} / ADMIN: $tipoUsuario");
 
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       child: ListTile(
         contentPadding: const EdgeInsets.all(10),
@@ -176,8 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: imageUrl != null
-              ? Image.network(
-                  imageUrl,
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl,
                   width: 60,
                   height: 60,
                   fit: BoxFit.cover,
@@ -191,9 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // =========================
         title: Text(
           empresa.nome,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
 
         // =========================
@@ -206,10 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (empresa.bairro != null)
               Text(
                 empresa.bairro!,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
           ],
         ),
@@ -225,14 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
               if (isAdmin)
                 IconButton(
                   tooltip: "Editar Empresa",
-                  icon: const Icon(
-                    Icons.edit,
-                    color: Colors.blue,
-                  ),
+                  icon: const Icon(Icons.edit, color: Colors.blue),
                   onPressed: () {
-                    debugPrint(
-                      "🆕 CLICOU ADMIN",
-                    );
+                    debugPrint("🆕 CLICOU ADMIN");
 
                     Navigator.push(
                       context,
@@ -245,10 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
         ),
@@ -260,10 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => EmpresaDetailScreen(
-                empresa: empresa,
-                isAdmin: isAdmin,
-              ),
+              builder: (_) =>
+                  EmpresaDetailScreen(empresa: empresa, isAdmin: isAdmin),
             ),
           );
         },
@@ -276,15 +249,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // =========================
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      "🔥 BUILD HOME => ADMIN: $tipoUsuario",
-    );
+    debugPrint("🔥 BUILD HOME => ADMIN: $tipoUsuario");
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("BSM Serviços"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("BSM Serviços"), centerTitle: true),
       body: Column(
         children: [
           // =========================
@@ -322,12 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (erro.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(10),
-              child: Text(
-                erro,
-                style: const TextStyle(
-                  color: Colors.red,
-                ),
-              ),
+              child: Text(erro, style: const TextStyle(color: Colors.red)),
             ),
 
           // =========================
@@ -336,9 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!jaBuscou && !loading)
             const Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
-                "Digite algo para buscar",
-              ),
+              child: Text("Digite algo para buscar"),
             ),
 
           // =========================
@@ -347,9 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (jaBuscou && !loading && empresas.isEmpty)
             const Padding(
               padding: EdgeInsets.all(20),
-              child: Text(
-                "Nenhuma empresa encontrada",
-              ),
+              child: Text("Nenhuma empresa encontrada"),
             ),
 
           // =========================
@@ -360,9 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView.builder(
                 itemCount: empresas.length,
                 itemBuilder: (context, index) {
-                  return buildEmpresaCard(
-                    empresas[index],
-                  );
+                  return buildEmpresaCard(empresas[index]);
                 },
               ),
             ),

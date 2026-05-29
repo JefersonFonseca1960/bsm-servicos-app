@@ -4,18 +4,22 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
+import '../widgets/upgrade_dialog.dart';
 
 class EmpresaFotosScreen extends StatefulWidget {
   final int empresaId;
   final bool isAdmin;
 
+  // 👇 NOVO: permissões vindas do backend
+  final Map<String, dynamic> permissoes;
+
   const EmpresaFotosScreen({
     super.key,
     required this.empresaId,
     required this.isAdmin,
+    required this.permissoes,
   });
 
   @override
@@ -30,9 +34,20 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
   bool _loading = false;
 
   // =========================
+  // 🔐 PERMISSÃO CENTRAL
+  // =========================
+  bool get podeUsarGaleria =>
+      widget.permissoes["galeria"] == true || widget.isAdmin;
+
+  // =========================
   // SELECIONAR + UPLOAD
   // =========================
   Future<void> _selecionarImagem() async {
+    if (!podeUsarGaleria) {
+      mostrarDialogUpgrade(context);
+      return;
+    }
+
     try {
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
@@ -41,22 +56,15 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
 
       if (image == null) return;
 
-      setState(() {
-        _loading = true;
-      });
+      setState(() => _loading = true);
 
-      debugPrint("IMAGEM => ${image.path}");
-
-      // 🔥 UPLOAD API
       final ok = await ApiService.uploadFotoEmpresa(
         empresaId: widget.empresaId,
         imagem: image,
       );
 
       if (ok) {
-        setState(() {
-          _fotos.add(image);
-        });
+        setState(() => _fotos.add(image));
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,9 +88,7 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _loading = false;
-        });
+        setState(() => _loading = false);
       }
     }
   }
@@ -91,13 +97,18 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
   // REMOVER
   // =========================
   void _removerFoto(int index) {
+    if (!podeUsarGaleria) {
+      mostrarDialogUpgrade(context);
+      return;
+    }
+
     setState(() {
       _fotos.removeAt(index);
     });
   }
 
   // =========================
-  // BUILD WEB
+  // WEB IMAGE
   // =========================
   Widget _buildWebImage(XFile foto) {
     return FutureBuilder<Uint8List>(
@@ -121,12 +132,10 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
   }
 
   // =========================
-  // BUILD IMAGE
+  // IMAGE
   // =========================
   Widget _buildImage(XFile foto) {
-    if (kIsWeb) {
-      return _buildWebImage(foto);
-    }
+    if (kIsWeb) return _buildWebImage(foto);
 
     return Image.file(
       File(foto.path),
@@ -137,7 +146,31 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
   }
 
   // =========================
-  // UI
+  // UI BLOQUEADA (PREVIEW)
+  // =========================
+  Widget _buildBlockedView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock, size: 80, color: Colors.grey),
+          const SizedBox(height: 10),
+          const Text(
+            "Galeria disponível apenas no plano Premium",
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 15),
+          ElevatedButton(
+            onPressed: () => mostrarDialogUpgrade(context),
+            child: const Text("Ver planos"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================
+  // BUILD
   // =========================
   @override
   Widget build(BuildContext context) {
@@ -153,7 +186,7 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
         ),
       ),
 
-      floatingActionButton: widget.isAdmin
+      floatingActionButton: podeUsarGaleria
           ? FloatingActionButton.extended(
               backgroundColor: Colors.blue,
               onPressed: _loading ? null : _selecionarImagem,
@@ -162,7 +195,9 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
             )
           : null,
 
-      body: _loading
+      body: !_loading && !podeUsarGaleria
+          ? _buildBlockedView()
+          : _loading
           ? const Center(child: CircularProgressIndicator())
           : _fotos.isEmpty
           ? Center(
@@ -174,9 +209,7 @@ class _EmpresaFotosScreenState extends State<EmpresaFotosScreen> {
                     size: 90,
                     color: Colors.grey[400],
                   ),
-
                   const SizedBox(height: 20),
-
                   Text(
                     "Nenhuma foto cadastrada",
                     style: TextStyle(fontSize: 18, color: Colors.grey[700]),

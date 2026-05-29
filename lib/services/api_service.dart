@@ -9,7 +9,7 @@ import '../models/empresa_model.dart';
 import '../models/servico.dart';
 
 class ApiService {
-  static const String baseUrl = "https://bsm-servicos-backend.onrender.com";
+  static const String baseUrl = "https://bsm-servicos-backend-1.onrender.com";
 
   static const String _tokenKey = "token";
   static const String _userTypeKey = "tipo_usuario";
@@ -90,7 +90,6 @@ class ApiService {
       final data = jsonDecode(response.body);
 
       final token = data["access_token"];
-
       final tipo = (data["tipo_usuario"] ?? "usuario").toString().toLowerCase();
 
       await saveToken(token);
@@ -117,7 +116,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-
       return data.map((e) => Empresa.fromJson(e)).toList();
     }
 
@@ -156,7 +154,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-
       return data.map((e) => Servico.fromJson(e)).toList();
     }
 
@@ -175,15 +172,18 @@ class ApiService {
     );
 
     debugPrint("🏢 CREATE EMPRESA STATUS: ${response.statusCode}");
-    debugPrint(response.body);
+    debugPrint("🏢 CREATE EMPRESA BODY: ${response.body}");
+    debugPrint("🏢 CREATE EMPRESA REQUEST: ${jsonEncode(data)}");
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception("Erro ao criar empresa");
+      throw Exception(
+        "Erro ao criar empresa: ${response.statusCode} - ${response.body}",
+      );
     }
   }
 
   // =========================
-  // UPDATE EMPRESA
+  // UPDATE EMPRESA (🔥 CORRIGIDO)
   // =========================
 
   static Future<void> updateEmpresa(int id, Map<String, dynamic> data) async {
@@ -194,10 +194,14 @@ class ApiService {
     );
 
     debugPrint("✏️ UPDATE EMPRESA STATUS: ${response.statusCode}");
-    debugPrint(response.body);
+    debugPrint("✏️ UPDATE EMPRESA BODY: ${response.body}");
+    debugPrint("✏️ UPDATE EMPRESA REQUEST: ${jsonEncode(data)}");
 
-    if (response.statusCode != 200) {
-      throw Exception("Erro ao atualizar empresa");
+    // 🔥 aceita 200 e 204
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception(
+        "Erro ao atualizar empresa: ${response.statusCode} - ${response.body}",
+      );
     }
   }
 
@@ -219,23 +223,19 @@ class ApiService {
 
       request.headers["Authorization"] = "Bearer $token";
 
-      // WEB
       if (kIsWeb) {
         final bytes = await imagem.readAsBytes();
 
         request.files.add(
           http.MultipartFile.fromBytes("file", bytes, filename: imagem.name),
         );
-      }
-      // MOBILE
-      else {
+      } else {
         request.files.add(
           await http.MultipartFile.fromPath("file", imagem.path),
         );
       }
 
       final response = await request.send();
-
       final body = await response.stream.bytesToString();
 
       debugPrint("📸 UPLOAD FOTO STATUS: ${response.statusCode}");
@@ -265,10 +265,6 @@ class ApiService {
     throw Exception("Erro ao buscar usuários");
   }
 
-  // =========================
-  // UPDATE USUÁRIO
-  // =========================
-
   static Future<void> updateUsuario(int id, Map<String, dynamic> data) async {
     final response = await http.put(
       Uri.parse("$baseUrl/usuarios/$id"),
@@ -280,10 +276,6 @@ class ApiService {
       throw Exception("Erro ao atualizar usuário");
     }
   }
-
-  // =========================
-  // DELETE USUÁRIO
-  // =========================
 
   static Future<void> deleteUsuario(int id) async {
     final response = await http.delete(

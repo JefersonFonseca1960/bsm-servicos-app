@@ -17,7 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool loading = false;
 
-  final baseUrl = "https://bsm-servicos-backend.onrender.com";
+  final baseUrl = "https://bsm-servicos-backend-1.onrender.com";
 
   Future<void> cadastrar() async {
     FocusScope.of(context).unfocus();
@@ -41,9 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final response = await http.post(
         Uri.parse("$baseUrl/usuarios/"), // 🔥 CORREÇÃO AQUI
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "nome": nomeController.text.trim(),
           "email": emailController.text.trim(),
@@ -67,10 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -92,19 +87,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Criar Conta"),
-      ),
+      appBar: AppBar(title: const Text("Criar Conta")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const SizedBox(height: 20),
-            const Icon(
-              Icons.person_add,
-              size: 80,
-              color: Colors.blue,
-            ),
+            const Icon(Icons.person_add, size: 80, color: Colors.blue),
             const SizedBox(height: 20),
             TextField(
               controller: nomeController,

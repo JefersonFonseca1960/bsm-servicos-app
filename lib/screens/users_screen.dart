@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'register_screen.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -29,9 +30,9 @@ class _UsersScreenState extends State<UsersScreen> {
     } catch (e) {
       setState(() => loading = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Erro: $e")));
     }
   }
 
@@ -97,10 +98,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       value: "admin",
                       child: Text("Administrador"),
                     ),
-                    DropdownMenuItem(
-                      value: "usuario",
-                      child: Text("Usuário"),
-                    ),
+                    DropdownMenuItem(value: "usuario", child: Text("Usuário")),
                   ],
                   onChanged: (value) {
                     tipo = value!;
@@ -117,14 +115,11 @@ class _UsersScreenState extends State<UsersScreen> {
             ElevatedButton(
               onPressed: () async {
                 try {
-                  await ApiService.updateUsuario(
-                    user["id"],
-                    {
-                      "nome": nomeController.text,
-                      "email": emailController.text,
-                      "tipo_usuario": tipo,
-                    },
-                  );
+                  await ApiService.updateUsuario(user["id"], {
+                    "nome": nomeController.text,
+                    "email": emailController.text,
+                    "tipo_usuario": tipo,
+                  });
 
                   Navigator.pop(context);
                   carregarUsuarios();
@@ -135,9 +130,9 @@ class _UsersScreenState extends State<UsersScreen> {
                     ),
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Erro: $e")),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text("Erro: $e")));
                 }
               },
               child: const Text("Salvar"),
@@ -155,28 +150,38 @@ class _UsersScreenState extends State<UsersScreen> {
 
       carregarUsuarios();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Usuário removido")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Usuário removido")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Erro: $e")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Gerenciar Usuários"),
+      appBar: AppBar(title: const Text("Gerenciar Usuários")),
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.person_add, color: Colors.white),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => RegisterScreen()),
+          );
+
+          carregarUsuarios();
+        },
       ),
+
       body: RefreshIndicator(
         onRefresh: carregarUsuarios,
         child: ListView.builder(
@@ -188,9 +193,7 @@ class _UsersScreenState extends State<UsersScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: ListTile(
                 leading: CircleAvatar(
-                  child: Text(
-                    getNomeUsuario(user)[0].toUpperCase(),
-                  ),
+                  child: Text(getNomeUsuario(user)[0].toUpperCase()),
                 ),
 
                 /// 👤 NOME
