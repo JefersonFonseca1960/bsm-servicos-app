@@ -103,6 +103,17 @@ class _HomeScreenState extends State<HomeScreen> {
   // =========================
 
   Future<void> carregarEmpresas() async {
+    for (final e in empresas) {
+      debugPrint("""
+        EMPRESA: ${e.nome}
+        PLANO: ${e.plano}
+        DESTAQUE: ${e.destaque}
+        WHATSAPP: ${e.whatsappDestacado}
+        SELO: ${e.seloPremium}
+        -----------------------
+        """);
+    }
+
     try {
       final lista = await api.ApiService.getEmpresas();
 
@@ -134,6 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final planoB = pesoPlano(b);
 
         // primeiro ordena por plano
+        if (a.exibirNoTopo != b.exibirNoTopo) {
+          return a.exibirNoTopo ? -1 : 1;
+        }
+
         if (planoA != planoB) {
           return planoA.compareTo(planoB);
         }
@@ -345,7 +360,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildEmpresaCard(Empresa empresa) {
     final imageUrl = getImageUrl(empresa);
-
+    final plano = (empresa.plano ?? "").toLowerCase();
+    final bool isMaster = plano == "master";
+    final bool isPremium = plano == "premium";
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
@@ -363,15 +380,21 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isMaster
+              ? Colors.orange.shade50
+              : isPremium
+              ? Colors.amber.shade50
+              : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+
+          border: Border.all(
+            color: isMaster
+                ? Colors.deepOrange
+                : isPremium
+                ? Colors.amber
+                : Colors.transparent,
+            width: 2,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,14 +430,51 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    empresa.nome,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          empresa.nome,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      if (isMaster)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 6),
+                          child: Icon(
+                            Icons.workspace_premium,
+                            color: Colors.deepOrange,
+                            size: 20,
+                          ),
+                        ),
+
+                      if (isPremium)
+                        Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            "PREMIUM",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
 
                   const SizedBox(height: 4),
@@ -452,6 +512,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   const SizedBox(height: 7),
+
+                  if (empresa.whatsappDestacado &&
+                      empresa.whatsapp != null &&
+                      empresa.whatsapp!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.chat, size: 14, color: Colors.green),
+                          const SizedBox(width: 4),
+                          Text(
+                            empresa.whatsapp!,
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   Row(
                     children: [

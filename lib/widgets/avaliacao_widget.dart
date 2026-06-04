@@ -1,7 +1,7 @@
 import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class AvaliacaoWidget extends StatefulWidget {
   final int empresaId;
@@ -18,92 +18,136 @@ class AvaliacaoWidget extends StatefulWidget {
 }
 
 class _AvaliacaoWidgetState extends State<AvaliacaoWidget> {
+  ///
+  ///   ja fez avaliaçao
+  ///
+
+  @override
+  void initState() {
+    super.initState();
+
+    debugPrint("⭐ AVALIACAO WIDGET INICIADO => ${widget.empresaId}");
+  }
+
   final comentarioController = TextEditingController();
 
   int nota = 5;
+
+  @override
+  void dispose() {
+    comentarioController.dispose();
+    super.dispose();
+  }
 
   bool loading = false;
 
   final baseUrl = "https://bsm-servicos-backend-1.onrender.com";
 
+  //
+  ///  Já fez avaliação
+  ///
+
+  Future<void> verificarSeJaAvaliou() async {
+  try {
+    final response = await http.get(
+      Uri.parse("$baseUrl/avaliacoes/"),
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+
+      final encontrou = data.any(
+        (a) =>
+            a["empresa_id"] == widget.empresaId &&
+            a["usuario_id"] == usuarioId,
+      );
+
+      setState(() {
+        jaAvaliou = encontrou;
+      });
+    }
+  } catch (e) {
+    debugPrint("Erro ao verificar avaliação: $e");
+  }
+}
+        setState(() {
+          jaAvaliou = encontrou;
+        });
+      }
+    } catch (e) {
+      debugPrint("Erro ao verificar avaliação: $e");
+    }
+  }
+
   // =========================
   // ENVIAR
   // =========================
 
-  Future<void> enviarAvaliacao() async {
-    if (comentarioController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Digite um comentário")));
+Future<void> enviarAvaliacao() async {
 
+  // Comentário obrigatório para notas baixas
+  if (notaSelecionada < 3 &&
+      comentarioController.text.trim().isEmpty) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Para avaliações abaixo de 3 estrelas é obrigatório informar um comentário.",
+        ),
+      ),
+    );
+
+    return;
+  }
+
+  // Aviso de responsabilidade
+  if (nota < 3) {
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Atenção"),
+        content: const Text(
+          "Avaliações negativas devem refletir experiências reais. Comentários ofensivos ou falsos podem ser removidos.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Continuar"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) {
       return;
     }
-
-    try {
-      setState(() {
-        loading = true;
-      });
-
-      final response = await http.post(
-        Uri.parse("$baseUrl/avaliacoes/avaliacoes/"),
-
-        headers: {"Content-Type": "application/json"},
-
-        body: jsonEncode({
-          "empresa_id": widget.empresaId,
-
-          // TODO:
-          // pegar usuário logado real
-          "usuario_id": 1,
-
-          "nota": nota,
-
-          "comentario": comentarioController.text.trim(),
-        }),
-      );
-
-      debugPrint("⭐ STATUS => ${response.statusCode}");
-
-      debugPrint("⭐ BODY => ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        comentarioController.clear();
-
-        setState(() {
-          nota = 5;
-        });
-
-        if (widget.onAvaliacaoEnviada != null) {
-          widget.onAvaliacaoEnviada!();
-        }
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text("Avaliação enviada com sucesso"),
-          ),
-        );
-      } else {
-        throw Exception("Erro ao enviar avaliação");
-      }
-    } catch (e) {
-      debugPrint("❌ ERRO => $e");
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
-    }
   }
+
+  try {
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/avaliacoes/"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "empresa_id": widget.empresaId,
+        "usuario_id": usuarioId,
+        "nota": nota,
+        "comentario": comentarioController.text.trim(),
+      }),
+    );
+
+    debugPrint("STATUS => ${response.statusCode}");
+    debugPrint("BODY => ${response.body}");
+
+  } catch (e) {
+    debugPrint("ERRO => $e");
+  }
+}
 
   // =========================
   // ESTRELA
@@ -185,7 +229,7 @@ class _AvaliacaoWidgetState extends State<AvaliacaoWidget> {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -288,6 +332,20 @@ class _AvaliacaoWidgetState extends State<AvaliacaoWidget> {
             width: double.infinity,
 
             child: ElevatedButton.icon(
+  onPressed: jaAvaliou
+      ? () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Você já avaliou esta empresa",
+              ),
+            ),
+          );
+        }
+      : (loading ? null : enviarAvaliacao),
+              
+              //
+              
               onPressed: loading ? null : enviarAvaliacao,
 
               icon: loading

@@ -17,6 +17,7 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
   final nomeController = TextEditingController();
   final descricaoController = TextEditingController();
   final telefoneController = TextEditingController();
+  final whatsappController = TextEditingController();
   final emailController = TextEditingController();
 
   final enderecoController = TextEditingController();
@@ -97,6 +98,8 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
       descricaoController.text = e.descricao ?? '';
 
       telefoneController.text = e.telefone ?? '';
+
+      whatsappController.text = e.whatsapp ?? "";
 
       emailController.text = e.email ?? '';
 
@@ -190,6 +193,8 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
         "descricao": descricaoController.text.trim(),
 
         "telefone": telefoneController.text.trim(),
+
+        "whatsapp": whatsappController.text.trim(),
 
         "email": emailController.text.trim(),
 
@@ -314,6 +319,17 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
                     controller: telefoneController,
 
                     decoration: const InputDecoration(labelText: "Telefone"),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: whatsappController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: "WhatsApp",
+                      prefixIcon: Icon(Icons.message),
+                    ),
                   ),
 
                   const SizedBox(height: 12),

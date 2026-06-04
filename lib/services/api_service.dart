@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +13,37 @@ class ApiService {
 
   static const String _tokenKey = "token";
   static const String _userTypeKey = "tipo_usuario";
+  static const String _userIdKey = "usuario_id";
+
+  //////  VERIFICAR
+
+  static Future<bool> enviarAvaliacao({
+    required int empresaId,
+    required int usuarioId,
+    required int nota,
+    String? comentario,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/avaliacoes/"),
+      headers: await _headers(),
+      body: jsonEncode({
+        "empresa_id": empresaId,
+        "nota": nota,
+        "comentario": comentario,
+      }),
+    );
+
+    debugPrint("⭐ AVALIACAO STATUS: ${response.statusCode}");
+    debugPrint("⭐ AVALIACAO BODY: ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    }
+
+    throw Exception(response.body);
+  }
+
+  ///
 
   // =========================
   // TOKEN
@@ -40,6 +71,20 @@ class ApiService {
   static Future<String?> getUserType() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userTypeKey);
+  }
+
+  // =========================
+  // USER ID
+  // =========================
+
+  static Future<void> saveUserId(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userIdKey, id);
+  }
+
+  static Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userIdKey);
   }
 
   // =========================
@@ -77,28 +122,61 @@ class ApiService {
     String username,
     String password,
   ) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/auth/login"),
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body: {"username": username.trim(), "password": password.trim()},
-    );
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/auth/login"),
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: {
+              "username": username.trim(),
+              "password": password.trim(),
+              "grant_type": "password",
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
-    debugPrint("🔐 LOGIN STATUS: ${response.statusCode}");
-    debugPrint("🔐 LOGIN BODY: ${response.body}");
+      debugPrint("🔐 LOGIN STATUS: ${response.statusCode}");
+      debugPrint("🔐 LOGIN BODY: ${response.body}");
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      final token = data["access_token"];
-      final tipo = (data["tipo_usuario"] ?? "usuario").toString().toLowerCase();
+        debugPrint("LOGIN RESPONSE => $data");
 
-      await saveToken(token);
-      await saveUserType(tipo);
+        final token = data["access_token"];
 
-      return data;
+        final tipo = (data["tipo_usuario"] ?? "usuario")
+            .toString()
+            .toLowerCase()
+            .trim();
+
+        final usuarioId = data["usuario_id"];
+
+        if (token == null || token.isEmpty) {
+          throw Exception("Token não recebido");
+        }
+
+        await logout();
+
+        await saveToken(token);
+        await saveUserType(tipo);
+
+        if (usuarioId != null) {
+          await saveUserId(usuarioId);
+        }
+
+        debugPrint("✅ LOGIN OK");
+        debugPrint("🧠 TIPO SALVO NO APP: [$tipo]");
+        debugPrint("👤 ID SALVO NO APP: [$usuarioId]");
+
+        return data;
+      }
+
+      throw Exception(response.body);
+    } catch (e) {
+      debugPrint("❌ ERRO LOGIN => $e");
+      rethrow;
     }
-
-    throw Exception("Erro no login");
   }
 
   // =========================
@@ -286,5 +364,13 @@ class ApiService {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception("Erro ao deletar usuário");
     }
+  }
+  // =========================
+  // DASHBOARD
+  // =========================
+
+  static Future<int> getTotalUsuarios() async {
+    final usuarios = await getUsuarios();
+    return usuarios.length;
   }
 }

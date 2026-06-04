@@ -40,29 +40,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       });
 
       final listaServicos = await ApiService.getServicos();
-
-      if (!mounted) return;
-
       final listaEmpresas = await ApiService.getEmpresas();
+      final listaUsuarios = await ApiService.getUsuarios();
 
-      // =========================
-      // DEBUG EMPRESAS
-      // =========================
-
-      for (var e in listaEmpresas) {
-        debugPrint("EMPRESA => ${e.id} | ${e.nome}");
-      }
-
-      final empresa4 = listaEmpresas.where((e) => e.id == 4).toList();
-
-      debugPrint("EMPRESA 4 => ${empresa4.length}");
+      debugPrint("USUÁRIOS: ${listaUsuarios.length}");
+      debugPrint("EMPRESAS: ${listaEmpresas.length}");
+      debugPrint("SERVIÇOS: ${listaServicos.length}");
 
       if (!mounted) return;
 
       setState(() {
-        totalServicos = listaServicos.length;
+        totalUsuarios = listaUsuarios.length;
         totalEmpresas = listaEmpresas.length;
-        totalUsuarios = 0;
+        totalServicos = listaServicos.length;
         loading = false;
       });
     } catch (e) {

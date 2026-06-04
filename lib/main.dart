@@ -7,25 +7,20 @@ import 'screens/users_screen.dart';
 import 'screens/empresa_form_screen.dart';
 
 import 'services/api_service.dart';
-import 'models/empresa_model.dart';
+import '../models/empresa_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final isLogged = await ApiService.isLoggedIn();
 
-  runApp(
-    MyApp(isLogged: isLogged),
-  );
+  runApp(MyApp(isLogged: isLogged));
 }
 
 class MyApp extends StatelessWidget {
   final bool isLogged;
 
-  const MyApp({
-    super.key,
-    required this.isLogged,
-  });
+  const MyApp({super.key, required this.isLogged});
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +30,7 @@ class MyApp extends StatelessWidget {
       title: 'BSM Serviços',
 
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
 
@@ -63,9 +56,7 @@ class MyApp extends StatelessWidget {
 
           /// ✏️ EDITAR
           if (args is Empresa) {
-            return EmpresaFormScreen(
-              empresa: args,
-            );
+            return EmpresaFormScreen(empresa: args);
           }
 
           /// 🆕 NOVA EMPRESA

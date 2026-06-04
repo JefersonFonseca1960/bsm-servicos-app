@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import '../models/empresa_model.dart';
 import 'empresa_fotos_screen.dart';
+import 'avaliacoes_screen.dart';
 
 class EmpresaDetailScreen extends StatefulWidget {
   final Empresa empresa;
@@ -43,6 +44,24 @@ class _EmpresaDetailScreenState extends State<EmpresaDetailScreen> {
       widget.empresa.permissoes ?? {"galeria": false};
 
   bool get podeUsarGaleria => permissoes["galeria"] == true || widget.isAdmin;
+
+  //
+  //
+  //
+  void abrirAvaliacoes() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AvaliacoesScreen(
+          empresaId: widget.empresa.id,
+          isAdmin: widget.isAdmin,
+        ),
+      ),
+    );
+  }
+  //
+  //
+  //
 
   @override
   void initState() {
@@ -128,22 +147,13 @@ class _EmpresaDetailScreenState extends State<EmpresaDetailScreen> {
     try {
       setState(() => carregandoAvaliacoes = true);
 
-      final response = await http.get(
-        Uri.parse("$baseUrl/avaliacoes/avaliacoes/"),
-      );
+      final response = await http.get(Uri.parse("$baseUrl/avaliacoes/"));
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
-
-        final lista = data
-            .where((a) => a["empresa_id"] == widget.empresa.id)
-            .map<Map<String, dynamic>>((a) => Map<String, dynamic>.from(a))
-            .toList();
-
-        setState(() => avaliacoes = lista);
       }
     } catch (e) {
-      debugPrint("ERRO AVALIAÇÕES: $e");
+      debugPrint("ERRO: $e");
     } finally {
       setState(() => carregandoAvaliacoes = false);
     }
@@ -296,8 +306,23 @@ class _EmpresaDetailScreenState extends State<EmpresaDetailScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
+                      const Spacer(),
+
+                      ElevatedButton.icon(
+                        onPressed: abrirAvaliacoes,
+                        icon: const Icon(Icons.star),
+                        label: const Text("Avaliar"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.black,
+                        ),
+                      ),
+
                       const SizedBox(width: 10),
+
                       const Icon(Icons.star, color: Colors.amber),
+
                       Text(mediaAvaliacoes.toStringAsFixed(1)),
                     ],
                   ),
